@@ -1,5 +1,5 @@
 from filecmp import dircmp
-from shutil import copy
+from shutil import copy, copytree
 import sys, os
 from threading import Thread
 
@@ -8,7 +8,7 @@ from threading import Thread
 
 def copy_diff_files_in_subdirs(dircmp_obj: dircmp, src: str, dest: str): 
     for cd in dircmp_obj.common_dirs: 
-        print("Common dirs " + cd)
+        # print("Common dirs " + cd)
         for df in dircmp_obj.subdirs[cd].diff_files: 
             src_file_path = src + "/" + cd + "/"+ df
             dest_file_path = dest + "/" + cd + "/"+ df
@@ -23,6 +23,7 @@ def remove_files_in_dest(dircmp_obj: dircmp, dest: str):
     # print(dircmp_obj.right_only)
     for fs in dircmp_obj.right_only:
         file_path = dest + "/" + fs
+        print("Removed -> ", file_path)
         os.remove(file_path) if os.path.isfile(file_path) else os.removedirs(file_path)
 
     for key, value in dircmp_obj.subdirs.items():
@@ -30,12 +31,14 @@ def remove_files_in_dest(dircmp_obj: dircmp, dest: str):
 
 def copy_files_added_to_source(dircmp_obj: dircmp, src: str, dest: str):
     for fs in dircmp_obj.left_only:
-        src_file_path = src + "/" + fs
-        copy(src_file_path, dest)
+        src_file_path = src + fs
+        dest_file_path = dest + fs
+        print("Copied files {} {}".format(src_file_path, dest_file_path))
+        copytree(src_file_path, dest_file_path, False, None) if os.path.isdir(src_file_path) else copy(src_file_path, dest_file_path)
 
-    for dir_key in dircmp_obj.subdirs.keys:
-        dir_val = dir_obj.subdirs[dir_key]
-        copy_files_added_to_source(dircmp_obj[dir_key], src + "/" + dir_key, dest + "/" + dir_key)
+    for dir_key in dircmp_obj.subdirs.keys():
+        dir_val = dircmp_obj.subdirs[dir_key]
+        copy_files_added_to_source(dir_val, src + "/" + dir_key, dest + "/" + dir_key)
 
 
 
@@ -50,10 +53,17 @@ def files_info(dircmp_obj: dircmp) -> dircmp:
 
 
 cmp: list[str] = sys.argv[1:len(sys.argv)]
+
+if len(cmp) < 2: 
+    print("Command line arguments are enough less than 2, make sure the command line arguments are 2.")
+    exit(1)
+
+if not os.path.isdir(cmp[0]) or not os.path.isdir(cmp[1]):
+    print("The comparison is invalid as the argument is a file")
+    exit(1)
+
 dircmp_obj = dircmp(cmp[0], cmp[1])
-
 dircmp_obj = files_info(dircmp_obj)
-
 
 copy_diff_thread = Thread(target=copy_diff_files_in_subdirs, args = (dircmp_obj, cmp[0], cmp[1]))
 copy_diff_thread.run()
