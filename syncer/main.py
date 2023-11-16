@@ -1,35 +1,46 @@
 from filecmp import dircmp
-from shutil import copy, copytree
+from shutil import copy, copytree, rmtree
 import sys, os
 from threading import Thread
 
+def usablepath(path: str) -> str:
+    path = path.strip()
+    print(path)
+    if not path.endswith('/'):
+        path = path + "/"
+    return path
 
-# copy the different files. 
-
+# Check for file path formation.
 def copy_diff_files_in_subdirs(dircmp_obj: dircmp, src: str, dest: str): 
-    for cd in dircmp_obj.common_dirs: 
-        # print("Common dirs " + cd)
-        for df in dircmp_obj.subdirs[cd].diff_files: 
-            src_file_path = src + "/" + cd + "/"+ df
-            dest_file_path = dest + "/" + cd + "/"+ df
-            # copy the files. 
-            copy(src_file_path, dest_file_path)
-        # recursive call to the function so that it can check the subdirs. 
-        copy_diff_files_in_subdirs(dircmp_obj.subdirs[cd], src + "/" + cd, dest+ "/" + cd)
+    src = usablepath(src)
+    dest = usablepath(dest)
 
-# delete the files only in the right hand side. 
+    for dfs in dircmp_obj.diff_files:
+        src_file_path = src + dfs
+        dest_file_path = dest + dfs
+        print("Copied diff files {} {}".format(src_file_path, dest_file_path))
+        copy(src_file_path, dest_file_path)
+    
+    for key,value in dircmp_obj.subdirs.items():
+        copy_diff_files_in_subdirs(value, src + key, dest + key) 
+    
+
+
 def remove_files_in_dest(dircmp_obj: dircmp, dest: str):
     # print the files in the right. 
     # print(dircmp_obj.right_only)
+    dest = usablepath(dest)
     for fs in dircmp_obj.right_only:
-        file_path = dest + "/" + fs
+        file_path = dest + fs
         print("Removed -> ", file_path)
-        os.remove(file_path) if os.path.isfile(file_path) else os.removedirs(file_path)
+        os.remove(file_path) if os.path.isfile(file_path) else rmtree(file_path, ignore_errors = True)
 
     for key, value in dircmp_obj.subdirs.items():
-        remove_files_in_dest(value, dest + "/" + key)
+        remove_files_in_dest(value, dest + key)
 
 def copy_files_added_to_source(dircmp_obj: dircmp, src: str, dest: str):
+    src = usablepath(src)
+    dest = usablepath(dest)
     for fs in dircmp_obj.left_only:
         src_file_path = src + fs
         dest_file_path = dest + fs
@@ -38,7 +49,7 @@ def copy_files_added_to_source(dircmp_obj: dircmp, src: str, dest: str):
 
     for dir_key in dircmp_obj.subdirs.keys():
         dir_val = dircmp_obj.subdirs[dir_key]
-        copy_files_added_to_source(dir_val, src + "/" + dir_key, dest + "/" + dir_key)
+        copy_files_added_to_source(dir_val, src + dir_key, dest + dir_key)
 
 
 
@@ -52,7 +63,9 @@ def files_info(dircmp_obj: dircmp) -> dircmp:
     return dircmp_obj
 
 
-cmp: list[str] = sys.argv[1:len(sys.argv)]
+cmp= []
+cmp.append(sys.argv[1])
+cmp.append(sys.argv[2])
 
 if len(cmp) < 2: 
     print("Command line arguments are enough less than 2, make sure the command line arguments are 2.")
@@ -61,7 +74,7 @@ if len(cmp) < 2:
 if not os.path.isdir(cmp[0]) or not os.path.isdir(cmp[1]):
     print("The comparison is invalid as the argument is a file")
     exit(1)
-
+# the second folder must exist to check this, if it does not then copy the entire tree.
 dircmp_obj = dircmp(cmp[0], cmp[1])
 dircmp_obj = files_info(dircmp_obj)
 
