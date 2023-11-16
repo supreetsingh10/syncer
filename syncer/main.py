@@ -1,15 +1,18 @@
 from filecmp import dircmp
 from shutil import copy, copytree, rmtree
-import sys, os
+import sys, os, platform
 from threading import Thread
 
+global OSNAME = platform.system()
 
 def usablepath(path: str) -> str:
     path = path.strip()
     print(path)
-    if not path.endswith('/'):
+    if OSNAME == "Linux" and not path.endswith('/'):
         path = path + "/"
-    os.path.normpath(path)
+    else if OSNAME == "Windows" and not path.endswith('\\')
+        path = path + "\\"
+    return path
 
 # Check for file path formation.
 def copy_diff_files_in_subdirs(dircmp_obj: dircmp, src: str, dest: str): 
@@ -61,8 +64,8 @@ def files_info(dircmp_obj: dircmp) -> dircmp:
 
 
 cmp= []
-cmp.append(sys.argv[1])
-cmp.append(sys.argv[2])
+cmp.append(os.path.abspath(sys.argv[1]))
+cmp.append(os.path.abspath(sys.argv[2]))
 
 
 if len(cmp) < 2: 
