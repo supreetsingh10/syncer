@@ -69,11 +69,16 @@ if len(cmp) < 2:
     print("Command line arguments are enough less than 2, make sure the command line arguments are 2.")
     exit(1)
 
-if not os.path.isdir(cmp[0]) or not os.path.isdir(cmp[1]):
-    print("The comparison is invalid as the argument is a file")
+if not os.path.isdir(cmp[0]):
+    print("The comparison is invalid as the source is a file")
     exit(1)
 
-# the second folder should exist to check this, if it does not then copy the entire tree.
+# copies the entire file tree. 
+if not os.path.exists(cmp[1]):
+    print("Destination folder does not exist, copying the entire path")
+    copytree(cmp[0], cmp[1], False, None)
+    exit(0)
+
 dircmp_obj = dircmp(cmp[0], cmp[1])
 dircmp_obj = files_info(dircmp_obj)
 
