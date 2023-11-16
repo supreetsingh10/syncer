@@ -3,12 +3,13 @@ from shutil import copy, copytree, rmtree
 import sys, os
 from threading import Thread
 
+
 def usablepath(path: str) -> str:
     path = path.strip()
     print(path)
     if not path.endswith('/'):
         path = path + "/"
-    return path
+    os.path.normpath(path)
 
 # Check for file path formation.
 def copy_diff_files_in_subdirs(dircmp_obj: dircmp, src: str, dest: str): 
@@ -24,8 +25,6 @@ def copy_diff_files_in_subdirs(dircmp_obj: dircmp, src: str, dest: str):
     for key,value in dircmp_obj.subdirs.items():
         copy_diff_files_in_subdirs(value, src + key, dest + key) 
     
-
-
 def remove_files_in_dest(dircmp_obj: dircmp, dest: str):
     # print the files in the right. 
     # print(dircmp_obj.right_only)
@@ -51,8 +50,6 @@ def copy_files_added_to_source(dircmp_obj: dircmp, src: str, dest: str):
         dir_val = dircmp_obj.subdirs[dir_key]
         copy_files_added_to_source(dir_val, src + dir_key, dest + dir_key)
 
-
-
 def files_info(dircmp_obj: dircmp) -> dircmp:
     dircmp_obj.phase0()
     dircmp_obj.phase1()
@@ -67,6 +64,7 @@ cmp= []
 cmp.append(sys.argv[1])
 cmp.append(sys.argv[2])
 
+
 if len(cmp) < 2: 
     print("Command line arguments are enough less than 2, make sure the command line arguments are 2.")
     exit(1)
@@ -74,7 +72,8 @@ if len(cmp) < 2:
 if not os.path.isdir(cmp[0]) or not os.path.isdir(cmp[1]):
     print("The comparison is invalid as the argument is a file")
     exit(1)
-# the second folder must exist to check this, if it does not then copy the entire tree.
+
+# the second folder should exist to check this, if it does not then copy the entire tree.
 dircmp_obj = dircmp(cmp[0], cmp[1])
 dircmp_obj = files_info(dircmp_obj)
 
